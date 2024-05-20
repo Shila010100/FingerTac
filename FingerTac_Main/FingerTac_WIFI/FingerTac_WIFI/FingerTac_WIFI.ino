@@ -67,6 +67,7 @@ void vibrateMotors(uint8_t intensities[3]) {
     if (i < 2) Serial.print(", ");
   }
   Serial.println();
+  
   for (uint8_t i = 0; i < 3; i++) {
     if (intensities[i] > 20) {
       tca9548a_select(i);
@@ -398,10 +399,12 @@ void loop() {
   if (client) {
     Serial.println("New client connected.");
     String currentLine = "";
+    boolean currentLineIsBlank = true;
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
-        if (c == '\n' && currentLine.length() == 0) {
+        Serial.write(c); // Debug print for received characters
+        if (c == '\n' && currentLineIsBlank) {
           client.println("HTTP/1.1 200 OK");
           client.println("Content-type:text/html");
           client.println();
@@ -409,27 +412,39 @@ void loop() {
           client.println("<body><h1>FingerTac</h1></body></html>");
           client.println();
           break;
-        } else if (c != '\r') {
-          currentLine += c;
-        }
-        if (c == '\n') {
-          Serial.println(currentLine);
-          if (currentLine.startsWith("GET /vibrate?intensities=")) {
-            int index = currentLine.indexOf('=') + 1;
-            String values = currentLine.substring(index);
-            uint8_t intensities[3] = {0, 0, 0};
-            int idx = 0;
-            for (int i = 0; i < values.length(); i++) {
-              if (values[i] == ',' || i == values.length() - 1) {
-                if (i == values.length() - 1) i++;
-                intensities[idx++] = values.substring(0, i).toInt();
-                values = values.substring(i + 1);
-                i = -1;
+        } else if (c == '\n') {
+          // End of a line
+          if (currentLine.length() > 0) {
+            Serial.println("Received request: " + currentLine); // Add this line
+            if (currentLine.startsWith("GET /vibrate?intensities=")) {
+              Serial.println("Parsing intensities..."); // Debug print for parsing start
+              int index = currentLine.indexOf('=') + 1;
+              String values = currentLine.substring(index);
+              uint8_t intensities[3] = {0, 0, 0};
+              int idx = 0;
+              for (int i = 0; i < values.length(); i++) {
+                if (values[i] == ',' || i == values.length() - 1) {
+                  if (i == values.length() - 1) i++;
+                  intensities[idx++] = values.substring(0, i).toInt();
+                  values = values.substring(i + 1);
+                  i = -1;
+                }
               }
+              Serial.print("Intensities parsed: ");
+              for (int i = 0; i < 3; i++) {
+                Serial.print(intensities[i]);
+                if (i < 2) Serial.print(", ");
+              }
+              Serial.println();
+              vibrateMotors(intensities);
             }
-            vibrateMotors(intensities);
+            currentLine = "";
           }
-          currentLine = "";
+          currentLineIsBlank = true;
+        } else if (c != '\r') {
+          // A character on the current line
+          currentLine += c;
+          currentLineIsBlank = false;
         }
       }
     }
