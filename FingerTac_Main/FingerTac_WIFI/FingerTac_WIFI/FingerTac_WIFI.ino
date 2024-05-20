@@ -61,6 +61,12 @@ bool is_drv_rt_mode = false;
 int g_display_counter = 0;
 
 void vibrateMotors(uint8_t intensities[3]) {
+  Serial.print("Vibrating motors with intensities: "); // added 5 lines.. serial print for debugging the connection with unity
+  for (int i = 0; i < 3; i++) {
+    Serial.print(intensities[i]);
+    if (i < 2) Serial.print(", ");
+  }
+  Serial.println();
   for (uint8_t i = 0; i < 3; i++) {
     if (intensities[i] > 20) {
       tca9548a_select(i);
