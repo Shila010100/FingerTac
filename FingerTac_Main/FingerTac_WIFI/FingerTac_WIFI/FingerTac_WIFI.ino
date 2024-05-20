@@ -22,6 +22,9 @@ WiFiServer server(8080);
 #include "include/draw_ceti_logo.h"
 //#include "include/hand_bw_10.h"
 
+// declare function prototype:
+void simulateWiFiCommand(String command);
+
 // Structure of espnow-message - must match the structure of the other participants
 struct espnow_haptic_message_struct {
   int message_counter;
@@ -145,7 +148,24 @@ byte updateScreenOrientation(bool isRightHandOrientation) {
   }
   return g_screen_orientation;
 }
-
+void simulateWiFiCommand(String command) {
+  Serial.println("Simulating WiFi Command: " + command);
+  if (command.startsWith("GET /vibrate?intensities=")) {
+    int index = command.indexOf('=') + 1;
+    String values = command.substring(index);
+    uint8_t intensities[3] = {0, 0, 0};
+    int idx = 0;
+    for (int i = 0; i < values.length(); i++) {
+      if (values[i] == ',' || i == values.length() - 1) {
+        if (i == values.length() - 1) i++;
+        intensities[idx++] = values.substring(0, i).toInt();
+        values = values.substring(i + 1);
+        i = -1;
+      }
+    }
+    vibrateMotors(intensities);
+  }
+}
 void setup() {
   M5.begin();
   //Serial.println(" - initializing LCD-Display");
@@ -409,5 +429,10 @@ void loop() {
     }
     client.stop();
     Serial.println("Client disconnected.");
+  }
+  // Check for Serial input to simulate WiFi command
+  if (Serial.available() > 0) {
+    String command = Serial.readStringUntil('\n');
+    simulateWiFiCommand(command);
   }
 }
