@@ -8,7 +8,6 @@
 #include "Adafruit_DRV2605.h"
 #include "TCA9548A.h"
 #include <esp_now.h>
-#include <WiFi.h>
 
 // WiFi credentials
 const char* ssid = "FRITZ!Box 7530 KJ"; // Alex home network: "FRITZ!Box 7530KJ"
@@ -16,7 +15,6 @@ const char* password = "38874388762792916547"; // Alex home network pw: "3887438
 
 // WiFi server
 WiFiServer server(8080);
-
 
 // include images:
 #include "include/draw_ceti_logo.h"
@@ -67,7 +65,7 @@ void vibrateMotors(uint8_t intensities[3]) {
     if (i < 2) Serial.print(", ");
   }
   Serial.println();
-  
+
   for (uint8_t i = 0; i < 3; i++) {
     if (intensities[i] > 20) {
       tca9548a_select(i);
