@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FingerTac Controller</title>
+</head>
+<body>
+    <h1>FingerTac Controller</h1>
+    <button onclick="sendVibration()">Send Vibration Command</button>
+    <script>
+        var ws = new WebSocket('ws://192.168.178.42:81'); // Replace <DEVICE_IP> with your device's IP address
+
+        ws.onopen = function() {
+            console.log('WebSocket connection opened');
+        };
+
+        ws.onmessage = function(event) {
+            console.log('Received message from server: ' + event.data);
+        };
+
+        ws.onclose = function() {
+            console.log('WebSocket connection closed');
+        };
+
+        function sendVibration() {
+            // Example: Send an array of intensities (values between 0 and 255)
+            var intensities = new Uint8Array([100, 150, 200]);
+            ws.send(intensities);
+            console.log('Sent vibration command:', intensities);
+        }
+    </script>
+</body>
+</html>
