@@ -10,7 +10,7 @@ const char* ssid = "FRITZ!Box 7530 KJ";
 const char* password = "38874388762792916547";
 
 // WebSocket server
-WebSocketsServer webSocket = WebSocketsServer(81);
+WebSocketsServer webSocket = WebSocketsServer(80);
 
 // include images:
 #include "include/draw_ceti_logo.h"

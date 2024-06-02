@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>M5StickC Plus WebSocket Test</title>
+</head>
+<body>
+    <h2>M5StickC Plus WebSocket Vibration Test</h2>
+    <button onclick="sendVibrationCommand()">Send Vibration Command</button>
+    
+    <script>
+        var ws;
+
+        function startWebSocket() {
+            var wsUri = "ws://192.168.4.1:80/";  // Update this to match the WebSocket server IP and port
+            console.log("Connecting to " + wsUri);
+            ws = new WebSocket(wsUri);
+
+            ws.onopen = function(evt) {
+                console.log("Connection open ...");
+            };
+
+            ws.onmessage = function(evt) {
+                console.log("Received Message: " + evt.data);
+                ws.close();
+            };
+
+            ws.onerror = function(evt) {
+                console.error("WebSocket error observed:", evt);
+            };
+
+            ws.onclose = function(evt) {
+                console.log("Connection closed.");
+            };
+        }
+
+        function sendVibrationCommand() {
+            if (ws.readyState === WebSocket.OPEN) {
+                var intensities = [255, 100, 100];  // Example vibration intensities
+                console.log("Sending vibration command: " + intensities);
+                ws.send(new Uint8Array(intensities));
+            } else {
+                console.log("WebSocket is not open. State: " + ws.readyState);
+            }
+        }
+
+        window.onload = startWebSocket;
+    </script>
+</body>
+</html>
