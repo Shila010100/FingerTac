@@ -1,0 +1,122 @@
+using UnityEngine;
+using UnityEngine.XR.Interaction.Toolkit;
+using System.Collections.Concurrent;
+using System.Threading;
+
+public class SendVibrationOnHover : MonoBehaviour
+{
+    private WebSocketConnectionManager webSocketManager;
+    private float lastSentTime = 0.0f;
+    private float sendInterval = 0.017f; // Interval in seconds, adjust as needed
+    public bool isRightHandMode = true; // Default to right hand, toggle through UI
+
+    private Thread sendThread;
+    private ConcurrentQueue<byte[]> commandQueue = new ConcurrentQueue<byte[]>();
+    private volatile bool isRunning = true;
+
+    void Start()
+    {
+        // Find the WebSocketConnectionManager in the scene
+        webSocketManager = FindObjectOfType<WebSocketConnectionManager>();
+
+        // Get the XRBaseInteractable component and subscribe to the hover event
+        XRBaseInteractable interactable = GetComponent<XRBaseInteractable>();
+        if (interactable != null)
+        {
+            interactable.hoverEntered.RemoveListener(HandleHoverEntered);
+            interactable.hoverEntered.AddListener(HandleHoverEntered);
+        }
+
+        // Start the dedicated thread for sending vibration commands
+        sendThread = new Thread(new ThreadStart(ProcessCommandQueue));
+        sendThread.Start();
+    }
+
+    private void ProcessCommandQueue()
+    {
+        while (isRunning)
+        {
+            if (commandQueue.TryDequeue(out byte[] command))
+            {
+                SendVibrationCommand(command);
+            }
+            Thread.Sleep(1); // Prevents the thread from spinning too fast
+        }
+    }
+
+    private void HandleHoverEntered(HoverEnterEventArgs arg)
+    {
+        if (arg.interactorObject is XRBaseInteractor interactor)
+        {
+            string interactorName = interactor.name;
+
+            if (IsInteractorFromActiveHand(interactorName))
+            {
+                if (Time.time - lastSentTime > sendInterval)
+                {
+                    lastSentTime = Time.time;
+                    byte[] intensities = DetermineVibrationIntensities(interactorName);
+                    commandQueue.Enqueue(intensities);
+                }
+            }
+        }
+    }
+
+    public void SetHandMode(bool isRightHand)
+    {
+        isRightHandMode = isRightHand;
+        Debug.Log("Hand mode set to: " + (isRightHand ? "Right" : "Left"));
+    }
+
+    private bool IsInteractorFromActiveHand(string interactorName)
+    {
+        return isRightHandMode ? interactorName.Contains("Right") : interactorName.Contains("Left");
+    }
+
+    private byte[] DetermineVibrationIntensities(string interactorName)
+    {
+        byte[] intensities = new byte[3];
+
+        if (interactorName.Contains("Index")) intensities[1] = 255;
+        else if (interactorName.Contains("Middle")) intensities[isRightHandMode ? 0 : 2] = 255;
+        else if (interactorName.Contains("Thumb")) intensities[isRightHandMode ? 2 : 0] = 255;
+
+        return intensities;
+    }
+
+    private void SendVibrationCommand(byte[] intensities)
+    {
+        if (webSocketManager != null && webSocketManager.ws != null && webSocketManager.ws.IsAlive)
+        {
+            float sendTime = Time.realtimeSinceStartup;
+            webSocketManager.ws.SendAsync(intensities, completed =>
+            {
+                if (completed)
+                {
+                    float receivedTime = Time.realtimeSinceStartup;
+                    float latency = receivedTime - sendTime;
+                    Debug.Log($"Vibration data sent successfully. Latency: {latency * 1000f} ms");
+                }
+                else
+                {
+                    Debug.LogError("Failed to send vibration data.");
+                }
+            });
+        }
+        else
+        {
+            Debug.LogError("WebSocket is not connected or WebSocketManager is not found.");
+        }
+    }
+
+    private void OnDestroy()
+    {
+        isRunning = false;
+        sendThread.Join(); // Ensure the thread is properly closed
+        XRBaseInteractable interactable = GetComponent<XRBaseInteractable>();
+        if (interactable != null)
+        {
+            interactable.hoverEntered.RemoveListener(HandleHoverEntered);
+        }
+    }
+}

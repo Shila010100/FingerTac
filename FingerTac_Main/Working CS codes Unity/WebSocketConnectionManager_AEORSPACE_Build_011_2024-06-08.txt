@@ -1,0 +1,60 @@
+using UnityEngine;
+using WebSocketSharp;
+
+public class WebSocketConnectionManager : MonoBehaviour
+{
+    private string serverAddress = "ws://192.168.4.1:80/"; // Adjusted for AP mode
+    public WebSocket ws;
+
+    void Start()
+    {
+        ConnectWebSocket();
+    }
+
+    void ConnectWebSocket()
+    {
+        ws = new WebSocket(serverAddress);
+        ws.OnOpen += OnOpenHandler;
+        ws.OnMessage += OnMessageHandler;
+        ws.OnError += OnErrorHandler;
+        ws.OnClose += OnCloseHandler;
+
+        Debug.Log("Attempting to connect to WebSocket server at " + serverAddress);
+        ws.ConnectAsync(); // Use asynchronous connection to avoid blocking the main thread
+    }
+
+    private void OnOpenHandler(object sender, System.EventArgs e)
+    {
+        Debug.Log("WebSocket connected");
+    }
+
+    private void OnMessageHandler(object sender, MessageEventArgs e)
+    {
+        Debug.Log("Received message from server: " + e.Data);
+    }
+
+    private void OnErrorHandler(object sender, ErrorEventArgs e)
+    {
+        Debug.LogError("WebSocket error: " + e.Message);
+        // Attempt reconnect after a delay if a critical error occurs
+        Invoke("ConnectWebSocket", 5); // 5-second delay before trying to reconnect
+    }
+
+    private void OnCloseHandler(object sender, CloseEventArgs e)
+    {
+        Debug.Log($"WebSocket closed, reason: {e.Reason}");
+        if (!e.WasClean) // Check if the close was unexpected
+        {
+            Debug.Log("Unexpected disconnect. Attempting to reconnect...");
+            ConnectWebSocket();
+        }
+    }
+
+    void OnDestroy()
+    {
+        if (ws != null)
+        {
+            ws.CloseAsync(); // Asynchronously close the WebSocket connection
+        }
+    }
+}
