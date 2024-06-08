@@ -7,8 +7,8 @@
 #include "include/draw_ceti_logo.h"
 
 // AP credentials
-const char* ssid = "M5StickCPlus_P2P";
-const char* password = "ShilasMagicWorld";  // Set a password for the AP
+const char* ssid = "FingerTac_Pink";
+const char* password = "Shila";  // Set a password for the AP
 
 // WebSocket server
 WebSocketsServer webSocket = WebSocketsServer(80);
