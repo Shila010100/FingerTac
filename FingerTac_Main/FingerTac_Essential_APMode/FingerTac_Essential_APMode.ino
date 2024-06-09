@@ -8,7 +8,7 @@
 
 // AP credentials
 const char* ssid = "FingerTac_Pink";
-const char* password = "Shila";  // Set a password for the AP
+const char* password = "magicworld";  // Set a password for the AP
 
 // WebSocket server
 WebSocketsServer webSocket = WebSocketsServer(80);
@@ -47,12 +47,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 
 void setup() {
   M5.begin();
+  Serial.begin(115200);
+  delay(200);   
   Serial.println("Initializing FingerTac Device in AP Mode");
 
   // Set brightness to lowest but visible setting
   M5.Axp.ScreenBreath(7);
   M5.Lcd.setRotation(3);  // Orientation set based on physical placement
   drawCetiBackground();  // Make sure to include your graphics correctly
+
+  // Clear any existing WiFi settings
+  WiFi.disconnect(true);  // Disconnect from any previous connections and clear the settings
+  delay(100);  // Short delay to ensure settings are cleared
 
   // Initialize WiFi in AP mode
   WiFi.mode(WIFI_AP);
@@ -61,6 +67,14 @@ void setup() {
   Serial.println("AP Mode activated");
   Serial.print("AP IP Address: ");
   Serial.println(WiFi.softAPIP());
+
+  // Debug: Print the current SSID to verify
+  Serial.print("Current SSID: ");
+  Serial.println(WiFi.softAPSSID());
+
+  // Debug: Print the current Password to verify
+  Serial.print("Current Password: ");
+  Serial.println(password);  // Be cautious with logging passwords
 
   // Start WebSocket server on AP
   webSocket.begin();
